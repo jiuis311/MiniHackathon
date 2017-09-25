@@ -2,6 +2,8 @@ const express = require('express');
 const handlebars = require('express-handlebars');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const fileController = require('./fileController.js');
+const scoreController = require('./score.js');
 
 const config = require('./config.json');
 
@@ -16,13 +18,18 @@ app.set('view engine', 'handlebars');
 
 app.get('/', (req, res) => {
 	res.render('rule');
+	scoreController.initScore();
 })
 
 app.get('/ask/:id', (req, res) => {
-	res.render('home', {
-		question : "Choose a number from 1 to 10",
-		count : 0,
-		idNum : req.params.id
+	fileController.getQuestion(req.params.id, (tmp) => {
+		let count = scoreController.getScore();
+		// console.log(tmp);
+		res.render('home', {
+			question : tmp.question,
+			count,
+			idNum : req.params.id
+		});
 	});
 });
 
@@ -31,8 +38,8 @@ app.get('/final', (req, res) => {
 })
 
 app.post('/api/question/:id', (req, res) => {
-	console.log(req.body.option);
-	// fileController.updateQuestion(req.params.id, {`num${req.body.option}` : 1});
+	console.log('option ' + req.body.option);
+	scoreController.addScore(parseInt(req.body.option));
 	if (req.params.id < 6) {
 		res.redirect(`/ask/${parseInt(req.params.id)+1}`);
 	} else {
@@ -44,27 +51,11 @@ app.post('/playnow', (req, res) => {
 	res.redirect('/ask/1');
 });
 
+app.post('/replay', (req, res) => {
+	res.redirect('/');
+});
 
 
-// app.use('/', questionViewRouter);
-// app.use('/api/question', questionApiRouter);
-
-
-// app.get('/about', (req, res) => {
-//   let questionList = [{ id : 1, question : 'test'}, {id : 2, question : 'test1'}]
-//   res.render('about',{ questionList });
-// });
-
-// app.use(express.static(__dirname + '/public'));
-
-// //localhost
-// mongoose.connect(config.connectionString, (err) => {
-//     if (err) {
-//       console.log(err);
-//     } else {
-//       console.log('connect success');
-//     }
-// });
 
 //localhost
 mongoose.connect(config.connectionString, (err) => {
